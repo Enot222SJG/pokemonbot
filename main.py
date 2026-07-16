@@ -5,6 +5,15 @@ from random import randint
 
 bot = telebot.TeleBot(token)
 
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, "Привет! Я бот для игры в покемонов.\n"
+                          "/go — создать покемона\n"
+                          "/info — информация о покемоне\n"
+                          "/attack (в ответ на сообщение) — атаковать\n"
+                          "/heal — восстановить здоровье\n"
+                          "/feed — покормить покемона")
+
 @bot.message_handler(commands=['go'])
 def go(message):
     username = message.from_user.username
@@ -49,6 +58,15 @@ def heal(message):
     username = message.from_user.username
     if username in Pokemon.pokemons:
         result = Pokemon.pokemons[username].heal()
+        bot.reply_to(message, result)
+    else:
+        bot.reply_to(message, "Сначала создай покемона через /go")
+
+@bot.message_handler(commands=['feed'])
+def feed(message):
+    username = message.from_user.username
+    if username in Pokemon.pokemons:
+        result = Pokemon.pokemons[username].feed()
         bot.reply_to(message, result)
     else:
         bot.reply_to(message, "Сначала создай покемона через /go")

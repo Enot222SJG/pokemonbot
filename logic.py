@@ -1,4 +1,7 @@
+import sys, io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 from random import randint
+from datetime import datetime, timedelta
 import requests
 
 class Pokemon:
@@ -14,6 +17,9 @@ class Pokemon:
         self.power = randint(10, 30)
         self.type = self.get_type()
         self.wins = 0
+        self.last_feed_time = datetime.now()
+        self.feed_interval = 60
+        self.feed_hp = randint(10, 20)
         Pokemon.pokemons[pokemon_trainer] = self
 
     def _fetch_data(self):
@@ -48,11 +54,16 @@ class Pokemon:
             return f"Победа @{self.pokemon_trainer} над @{enemy.pokemon_trainer}! "
 
     def info(self):
+        next_feed = self.last_feed_time + timedelta(seconds=self.feed_interval)
+        time_left = next_feed - datetime.now()
+        minutes, seconds = divmod(int(time_left.total_seconds()), 60)
+        feed_status = f"До следующего кормления: {minutes} мин {seconds} сек" if time_left.total_seconds() > 0 else "Можно кормить!"
         return (f"Имя: {self.name}\n"
                 f"Тип: {self.type}\n"
                 f"HP: {self.hp}\n"
                 f"Сила: {self.power}\n"
-                f"Побед: {self.wins}")
+                f"Побед: {self.wins}\n"
+                f"🍽 {feed_status}")
 
     def show_img(self):
         return self.img
@@ -61,12 +72,26 @@ class Pokemon:
         self.hp = randint(100, 200)
         return f"{self.name} восстановил здоровье!"
 
+    def feed(self):
+        now = datetime.now()
+        if now - self.last_feed_time >= timedelta(seconds=self.feed_interval):
+            self.hp += self.feed_hp
+            self.last_feed_time = now
+            return f"{self.name} покормлен! HP +{self.feed_hp}. Теперь HP: {self.hp}"
+        else:
+            next_feed = self.last_feed_time + timedelta(seconds=self.feed_interval)
+            time_left = next_feed - now
+            minutes, seconds = divmod(int(time_left.total_seconds()), 60)
+            return f"Покемон сыт! Следующее кормление через {minutes} мин {seconds} сек."
+
 
 class Fighter(Pokemon):
     def __init__(self, pokemon_trainer):
         super().__init__(pokemon_trainer)
         self.hp = randint(80, 150)
         self.power = randint(20, 40)
+        self.feed_interval = 30
+        self.feed_hp = randint(10, 20)
 
     def attack(self, enemy):
         super_power = randint(5, 15)
@@ -84,6 +109,7 @@ class Wizard(Pokemon):
         super().__init__(pokemon_trainer)
         self.hp = randint(120, 220)
         self.power = randint(8, 20)
+        self.feed_hp = randint(20, 35)
 
     def attack(self, enemy):
         if isinstance(enemy, Wizard):
@@ -94,3 +120,17 @@ class Wizard(Pokemon):
 
     def info(self):
         return "У тебя покемон-волшебник\n" + super().info()
+
+
+if __name__ == '__main__':
+    wizard = Wizard("username1")
+    fighter = Fighter("username2")
+
+    print(wizard.info())
+    print()
+    print(fighter.info())
+    print()
+    print(fighter.attack(wizard))
+    print()
+    print(wizard.feed())
+    print(fighter.feed())
